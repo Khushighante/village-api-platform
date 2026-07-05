@@ -22,7 +22,7 @@ model User {
 model ApiKey {
   id        String   @id @default(uuid())
   name      String
-  key       String   @unique // ak_[32 chars]
+  key       String   @unique
   secret    String
   status    String   @default("ACTIVE")
   userId    String
@@ -30,7 +30,7 @@ model ApiKey {
   createdAt DateTime @default(now())
   apiLogs   ApiLog[]
 
-  @@index([key]) // Section 4.3 Indexing Strategy
+  @@index([key])
 }
 
 model UserStateAccess {
@@ -44,7 +44,7 @@ model UserStateAccess {
 
 model State {
   id          String            @id @default(uuid())
-  code        String            @unique // MDDS State Code
+  code        String            @unique
   name        String
   districts   District[]
   userAccess  UserStateAccess[]
@@ -52,34 +52,34 @@ model State {
 
 model District {
   id           String        @id @default(uuid())
-  code         String        @unique // MDDS District Code
+  code         String        @unique
   name         String
   stateId      String
   state        State         @relation(fields: [stateId], references: [id])
   subDistricts SubDistrict[]
 
-  @@index([stateId]) // Section 4.3 Indexing Strategy
+  @@index([stateId])
 }
 
 model SubDistrict {
   id         String    @id @default(uuid())
-  code       String    @unique // MDDS Sub-District Code
+  code       String    @unique
   name       String
   districtId String
   district   District  @relation(fields: [districtId], references: [id])
   villages   Village[]
 
-  @@index([districtId]) // Section 4.3 Indexing Strategy
+  @@index([districtId])
 }
 
 model Village {
   id            String      @id @default(uuid())
-  code          String      @unique // MDDS Village Code
+  code          String      @unique
   name          String
   subDistrictId String
   subDistrict   SubDistrict @relation(fields: [subDistrictId], references: [id])
 
-  @@index([subDistrictId]) // Section 4.3 Indexing Strategy
+  @@index([subDistrictId])
 }
 
 model ApiLog {
@@ -93,5 +93,5 @@ model ApiLog {
   user         User     @relation(fields: [userId], references: [id])
   apiKey       ApiKey   @relation(fields: [apiKeyId], references: [id])
 
-  @@index([createdAt, userId]) // Section 4.3 Indexing Strategy
+  @@index([createdAt, userId])
 }
