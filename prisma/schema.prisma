@@ -1,0 +1,97 @@
+﻿datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  businessName String
+  status       String        @default("PENDING_APPROVAL")
+  planType     String        @default("FREE")
+  createdAt    DateTime      @default(now())
+  apiKeys      ApiKey[]
+  stateAccess  UserStateAccess[]
+  apiLogs      ApiLog[]
+}
+
+model ApiKey {
+  id        String   @id @default(uuid())
+  name      String
+  key       String   @unique
+  secret    String
+  status    String   @default("ACTIVE")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  apiLogs   ApiLog[]
+
+  @@index([key])
+}
+
+model UserStateAccess {
+  id        String   @id @default(uuid())
+  userId    String
+  stateId   String
+  user      User     @relation(fields: [userId], references: [id])
+  state     State    @relation(fields: [stateId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model State {
+  id          String            @id @default(uuid())
+  code        String            @unique
+  name        String
+  districts   District[]
+  userAccess  UserStateAccess[]
+}
+
+model District {
+  id           String        @id @default(uuid())
+  code         String        @unique
+  name         String
+  stateId      String
+  state        State         @relation(fields: [stateId], references: [id])
+  subDistricts SubDistrict[]
+
+  @@index([stateId])
+}
+
+model SubDistrict {
+  id         String    @id @default(uuid())
+  code       String    @unique
+  name       String
+  districtId String
+  district   District  @relation(fields: [districtId], references: [id])
+  villages   Village[]
+
+  @@index([districtId])
+}
+
+model Village {
+  id            String      @id @default(uuid())
+  code          String      @unique
+  name          String
+  subDistrictId String
+  subDistrict   SubDistrict @relation(fields: [subDistrictId], references: [id])
+
+  @@index([subDistrictId])
+}
+
+model ApiLog {
+  id           String   @id @default(uuid())
+  endpoint     String
+  responseTime Int
+  statusCode   Int
+  userId       String
+  apiKeyId     String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+  apiKey       ApiKey   @relation(fields: [apiKeyId], references: [id])
+
+  @@index([createdAt, userId])
+}
