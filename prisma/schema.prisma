@@ -1,4 +1,4 @@
-datasource db {
+﻿datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
@@ -8,53 +8,90 @@ generator client {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
+  id           String        @id @default(uuid())
+  email        String        @unique
   businessName String
-  gstNumber    String?
-  status       String   @default("PENDING_APPROVAL") // PENDING_APPROVAL, ACTIVE, SUSPENDED
-  planType     String   @default("FREE")             // FREE, PREMIUM, PRO, UNLIMITED
-  createdAt    DateTime @default(now())
+  status       String        @default("PENDING_APPROVAL")
+  planType     String        @default("FREE")
+  createdAt    DateTime      @default(now())
   apiKeys      ApiKey[]
+  stateAccess  UserStateAccess[]
+  apiLogs      ApiLog[]
 }
 
 model ApiKey {
   id        String   @id @default(uuid())
   name      String
   key       String   @unique // ak_[32 chars]
-  secret    String   // Hashed as_[32 chars]
+  secret    String
   status    String   @default("ACTIVE")
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+  apiLogs   ApiLog[]
+
+  @@index([key]) // Section 4.3 Indexing Strategy
+}
+
+model UserStateAccess {
+  id        String   @id @default(uuid())
+  userId    String
+  stateId   String
+  user      User     @relation(fields: [userId], references: [id])
+  state     State    @relation(fields: [stateId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 model State {
-  id        String     @id @default(uuid())
-  name      String     @unique
-  districts District[]
+  id          String            @id @default(uuid())
+  code        String            @unique // MDDS State Code
+  name        String
+  districts   District[]
+  userAccess  UserStateAccess[]
 }
 
 model District {
-  id            String        @id @default(uuid())
-  name          String
-  stateId       String
-  state         State         @relation(fields: [stateId], references: [id])
-  subDistricts  SubDistrict[]
+  id           String        @id @default(uuid())
+  code         String        @unique // MDDS District Code
+  name         String
+  stateId      String
+  state        State         @relation(fields: [stateId], references: [id])
+  subDistricts SubDistrict[]
+
+  @@index([stateId]) // Section 4.3 Indexing Strategy
 }
 
 model SubDistrict {
   id         String    @id @default(uuid())
+  code       String    @unique // MDDS Sub-District Code
   name       String
   districtId String
   district   District  @relation(fields: [districtId], references: [id])
   villages   Village[]
+
+  @@index([districtId]) // Section 4.3 Indexing Strategy
 }
 
 model Village {
   id            String      @id @default(uuid())
+  code          String      @unique // MDDS Village Code
   name          String
-  code          String      @unique
   subDistrictId String
   subDistrict   SubDistrict @relation(fields: [subDistrictId], references: [id])
+
+  @@index([subDistrictId]) // Section 4.3 Indexing Strategy
+}
+
+model ApiLog {
+  id           String   @id @default(uuid())
+  endpoint     String
+  responseTime Int
+  statusCode   Int
+  userId       String
+  apiKeyId     String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+  apiKey       ApiKey   @relation(fields: [apiKeyId], references: [id])
+
+  @@index([createdAt, userId]) // Section 4.3 Indexing Strategy
 }
